@@ -14,6 +14,36 @@
 
 状态文件只保存事件、工作目录、模型、工具名和时间戳；不会保存用户 prompt 或 assistant 正文。
 
+## Status Preview
+
+思考时，它会显示：
+
+![触控栏快照2026-05-28 15.09.30](assets/readme/status-thinking.png)
+
+需要授权时，它会显示：
+
+![触控栏快照2026-05-28 15.12.51](assets/readme/status-permission.png)
+
+跑命令时，它会显示：
+
+![触控栏快照2026-05-28 15.24.10](assets/readme/status-command.png)
+
+改文件时，它会显示：
+
+![触控栏快照2026-05-28 15.17.38](assets/readme/status-edit.png)
+
+空闲时，它会进入一种非常合理的工作状态：
+
+![image-20260528150741064](assets/readme/status-idle.png)
+
+旁边还有一个 Codex 小宠物，在 Touch Bar 上慢慢走路。
+
+还有一些其他状态显示：
+
+![触控栏快照2026-05-28 15.09.58](assets/readme/status-other-1.png)
+
+![触控栏快照2026-05-28 15.10.38](assets/readme/status-other-2.png)
+
 ## BetterTouchTool Widget
 
 新建一个全局 Touch Bar Shell Script Widget，刷新间隔设为 `1` 或 `2` 秒，脚本填：
