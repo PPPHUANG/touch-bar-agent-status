@@ -44,6 +44,45 @@
 
 ![触控栏快照2026-05-28 15.10.38](assets/readme/status-other-2.png)
 
+## Quick Start
+
+如果你是第一次从 GitHub 拉下这个项目，推荐按下面顺序配置：
+
+1. 准备环境：
+   安装 `Codex.app` 和 `BetterTouchTool`，并确认 `Codex.app` 在 `/Applications/Codex.app`。
+
+2. 安装 hooks：
+
+```sh
+"/Applications/Codex.app/Contents/Resources/node" "/你的项目路径/install-codex-hooks.mjs"
+```
+
+3. 在 Codex 里 trust hooks：
+   打开 Codex，进入 `Settings -> Hooks`，把这组 hooks 标记为 trusted。
+
+4. 先添加一个主状态小组件：
+   在 BTT 里新建 `AppleScript / JavaScript 小组件`，`Source Type` 选 `Apple Script`，脚本填：
+
+```applescript
+return do shell script ((quoted form of "/Applications/Codex.app/Contents/Resources/node") & " " & (quoted form of "/你的项目路径/codex-touchbar-read.mjs") & " --slot main")
+```
+
+5. 刷新间隔设为 `1` 或 `2` 秒。
+
+6. 验证是否成功：
+
+```sh
+"/Applications/Codex.app/Contents/Resources/node" "/你的项目路径/codex-touchbar-read.mjs" --text
+```
+
+如果能看到 `摸鱼中...` 之类的输出，说明读取脚本是正常的。随后在 Codex 里跑一次简单命令，比如 `date`，Touch Bar 应该会切到思考、命令、完成这些状态。
+
+`/你的项目路径/` 需要替换成你自己 clone 下来的实际目录，例如：
+
+```sh
+/Users/yourname/Documents/touch-bar-agent-status
+```
+
 ## BetterTouchTool Widget
 
 新建一个全局 Touch Bar Shell Script Widget，刷新间隔设为 `1` 或 `2` 秒，脚本填：
@@ -144,4 +183,4 @@ return do shell script ((quoted form of "/Applications/Codex.app/Contents/Resour
 
 ## Hook Trust
 
-安装或修改 hook 后，打开 Codex 并输入 `/hooks`，review/trust 这组 hook。Codex 会按 hook hash 记录信任状态，所以脚本更新后重新 trust 是正常的。
+安装或修改 hook 后，打开 Codex，进入 `Settings -> Hooks`，review/trust 这组 hook。Codex 会按 hook hash 记录信任状态，所以脚本更新后重新 trust 是正常的。
