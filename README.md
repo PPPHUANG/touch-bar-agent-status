@@ -130,11 +130,17 @@ BTT 的 Script Widget 对动态 SF Symbol 的支持会随版本变化；这个 M
 - `--slot timer`: 当前回合耗时，例如 `00:18`
 - `--slot tool`: 当前工具，例如 `Bash`、`Patch`、`Browser`
 - `--slot diff`: 当前补丁行数，例如 `+12 -3`
+- `--slot diff-add`: 新增行数，例如绿色 `+12`
+- `--slot diff-remove`: 删除行数，例如红色 `-3`
 - `--slot file`: 当前文件，例如 `read.mjs`
 - `--slot pet`: 单独的小宠物槽位，只显示宠物图标
 - `--slot walk --index N --count M`: 空闲时横向走动用的宠物槽位
 
 `main` 槽位和旧的单槽位模式会显示 Codex 小宠物帧；空闲时显示 `摸鱼中...` 并循环走路帧。`pet` 槽位可以单独放一个宠物。其他槽位在没有实际内容时会返回透明空白，例如空闲时不会再显示 `00:00`、`idle`、`+0 -0` 或工作区名。
+
+BTT 的 Script Widget 只能给整个槽位设置一个 `font_color`，所以如果想让新增和删除分别显示绿色/红色，请用 `diff-add` 和 `diff-remove` 两个槽位替代单个 `diff` 槽位。
+
+`timer`、`file` 和命令态的 `tool` 槽位会分别带本地 PNG 图标：时间、文本/文档、终端。
 
 AppleScript / JavaScript 小组件可以分别填：
 
@@ -152,6 +158,14 @@ return do shell script ((quoted form of "/Applications/Codex.app/Contents/Resour
 
 ```applescript
 return do shell script ((quoted form of "/Applications/Codex.app/Contents/Resources/node") & " " & (quoted form of "/Users/ppphuang/Documents/agent-status/codex-touchbar-read.mjs") & " --slot diff")
+```
+
+```applescript
+return do shell script ((quoted form of "/Applications/Codex.app/Contents/Resources/node") & " " & (quoted form of "/Users/ppphuang/Documents/agent-status/codex-touchbar-read.mjs") & " --slot diff-add")
+```
+
+```applescript
+return do shell script ((quoted form of "/Applications/Codex.app/Contents/Resources/node") & " " & (quoted form of "/Users/ppphuang/Documents/agent-status/codex-touchbar-read.mjs") & " --slot diff-remove")
 ```
 
 ```applescript

@@ -8,6 +8,7 @@ const DEFAULT_STATE_FILE = path.join(SCRIPT_DIR, ".state", "codex-touchbar-statu
 const STATE_FILE = process.env.CODEX_TOUCHBAR_STATE_FILE || DEFAULT_STATE_FILE;
 const CODEX_ICON_PATH = "/Applications/Codex.app/Contents/Resources/codexTemplate@2x.png";
 const PET_FRAME_DIR = path.join(SCRIPT_DIR, "assets", "pet", "frames");
+const ICON_DIR = path.join(SCRIPT_DIR, "assets", "icons");
 const TRANSPARENT = "0,0,0,0";
 const TRANSPARENT_ICON_DATA =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=";
@@ -25,19 +26,26 @@ const ARGS = parseArgs(process.argv.slice(2));
 const SLOT = ARGS.get("--slot");
 
 const COLORS = {
-  thinking: "37,99,235,255",
-  tool: "234,88,12,255",
-  wait: "126,34,206,255",
-  ok: "22,163,74,255",
-  idle: "14,165,171,255",
-  error: "220,38,38,255",
+  thinking: "30,64,175,255",
+  tool: "154,52,18,255",
+  wait: "91,33,182,255",
+  ok: "22,101,52,255",
+  idle: "17,94,89,255",
+  error: "153,27,27,255",
+  subSlot: "24,24,27,235",
+  subSlotSoft: "39,39,42,235",
+  text: "255,255,255,255",
+  mutedText: "212,212,216,255",
+  diffText: "134,239,172,255",
+  removeText: "252,165,165,255",
+  fileText: "153,246,228,255",
 };
 
 const IDLE_FRAMES = [
-  { text: "摸鱼中", color: "14,165,171,255" },
-  { text: "摸鱼中.", color: "6,182,212,255" },
-  { text: "摸鱼中..", color: "20,184,166,255" },
-  { text: "摸鱼中...", color: "45,212,191,255" },
+  { text: "摸鱼中", color: "17,94,89,255" },
+  { text: "摸鱼中.", color: "15,118,110,255" },
+  { text: "摸鱼中..", color: "20,83,79,255" },
+  { text: "摸鱼中...", color: "12,104,96,255" },
 ];
 
 const PET_FRAMES = {
@@ -148,7 +156,7 @@ function renderIdle(now) {
   return {
     text: frame.text,
     backgroundColor: frame.color,
-    fontColor: "255,255,255,255",
+    fontColor: COLORS.text,
     sfSymbol: SYMBOLS.idle,
     status: "IDLE",
   };
@@ -163,6 +171,23 @@ function renderEmptySlot(status = "IDLE") {
     fontSize: 1,
     iconData: TRANSPARENT_ICON_DATA,
   };
+}
+
+function statusAccentColor(status) {
+  switch (status) {
+    case "ERR":
+      return "252,165,165,255";
+    case "WAIT":
+      return "216,180,254,255";
+    case "OK":
+      return COLORS.diffText;
+    case "TOOL":
+      return "253,186,116,255";
+    case "RUN":
+      return "147,197,253,255";
+    default:
+      return COLORS.mutedText;
+  }
 }
 
 function walkPosition(now, count) {
@@ -188,6 +213,33 @@ function petIconPath(rendered, now) {
   const frame = frames[Math.floor(now / 700) % frames.length];
   const framePath = path.join(PET_FRAME_DIR, frame);
   return fs.existsSync(framePath) ? framePath : CODEX_ICON_PATH;
+}
+
+function assetIconPath(name) {
+  const iconPath = path.join(ICON_DIR, `${name}.png`);
+  return fs.existsSync(iconPath) ? iconPath : undefined;
+}
+
+function slotIconPayload(name) {
+  const iconPath = name ? assetIconPath(name) : undefined;
+  return iconPath ? { iconPath } : { iconData: TRANSPARENT_ICON_DATA };
+}
+
+function toolSlotIconName(state) {
+  const phase = String(state?.phase || "");
+  const lastToolPhase = String(state?.lastToolPhase || "");
+  const toolName = String(state?.toolName || "").toLowerCase();
+  const symbol = String(state?.symbol || "");
+  if (
+    phase === "command" ||
+    lastToolPhase === "command" ||
+    symbol === "terminal" ||
+    toolName === "bash" ||
+    /shell|exec|terminal/.test(toolName)
+  ) {
+    return "terminal";
+  }
+  return null;
 }
 
 function withElapsed(text, state, now) {
@@ -240,6 +292,16 @@ function diffSlotText(state) {
   return `+${Number(change.added || 0)} -${Number(change.removed || 0)}`;
 }
 
+function diffAddSlotText(state) {
+  const change = state?.fileChange;
+  return `+${Number(change?.added || 0)}`;
+}
+
+function diffRemoveSlotText(state) {
+  const change = state?.fileChange;
+  return `-${Number(change?.removed || 0)}`;
+}
+
 function fileSlotText(state) {
   const change = state?.fileChange;
   if (!change) return workspaceName(state);
@@ -283,12 +345,12 @@ function renderSlot(slot, state, rendered, now) {
       if (!state || rendered.status === "IDLE") return renderEmptySlot(rendered.status);
       return {
         text: elapsedSlotText(state, rendered, now),
-        backgroundColor:
-          rendered.status === "IDLE" ? "39,39,42,255" : rendered.backgroundColor,
-        fontColor: "255,255,255,255",
+        backgroundColor: COLORS.subSlot,
+        fontColor: statusAccentColor(rendered.status),
         sfSymbol: "timer",
         status: rendered.status,
         fontSize: 13,
+        ...slotIconPayload("timer"),
       };
     case "tool":
       if (rendered.status === "IDLE") {
@@ -296,12 +358,12 @@ function renderSlot(slot, state, rendered, now) {
       }
       return {
         text: toolSlotLabel(state, rendered),
-        backgroundColor:
-          rendered.status === "IDLE" ? "63,63,70,255" : rendered.backgroundColor,
-        fontColor: "255,255,255,255",
+        backgroundColor: COLORS.subSlotSoft,
+        fontColor: statusAccentColor(rendered.status),
         sfSymbol: state?.symbol || rendered.sfSymbol,
         status: rendered.status,
         fontSize: 12,
+        ...slotIconPayload(toolSlotIconName(state)),
       };
     case "diff": {
       const hasChange = Boolean(state?.fileChange);
@@ -310,9 +372,41 @@ function renderSlot(slot, state, rendered, now) {
       }
       return {
         text: diffSlotText(state),
-        backgroundColor: "21,128,61,255",
-        fontColor: "255,255,255,255",
+        backgroundColor: COLORS.subSlot,
+        fontColor: COLORS.diffText,
         sfSymbol: "plus.forwardslash.minus",
+        status: rendered.status,
+        fontSize: 13,
+      };
+    }
+    case "diff-add":
+    case "diffAdd":
+    case "add": {
+      const hasChange = Boolean(state?.fileChange);
+      if (!hasChange || rendered.status === "IDLE") {
+        return renderEmptySlot(rendered.status);
+      }
+      return {
+        text: diffAddSlotText(state),
+        backgroundColor: COLORS.subSlot,
+        fontColor: COLORS.diffText,
+        sfSymbol: "plus",
+        status: rendered.status,
+        fontSize: 13,
+      };
+    }
+    case "diff-remove":
+    case "diffRemove":
+    case "remove": {
+      const hasChange = Boolean(state?.fileChange);
+      if (!hasChange || rendered.status === "IDLE") {
+        return renderEmptySlot(rendered.status);
+      }
+      return {
+        text: diffRemoveSlotText(state),
+        backgroundColor: COLORS.subSlot,
+        fontColor: COLORS.removeText,
+        sfSymbol: "minus",
         status: rendered.status,
         fontSize: 13,
       };
@@ -323,11 +417,12 @@ function renderSlot(slot, state, rendered, now) {
       }
       return {
         text: fileSlotText(state),
-        backgroundColor: state?.fileChange ? "15,118,110,255" : "51,65,85,255",
-        fontColor: "255,255,255,255",
+        backgroundColor: COLORS.subSlotSoft,
+        fontColor: COLORS.fileText,
         sfSymbol: "doc.text",
         status: rendered.status,
         fontSize: 12,
+        ...slotIconPayload("text"),
       };
     default:
       return {
@@ -349,7 +444,7 @@ function render(state, now = Date.now()) {
     return {
       text: "有点卡住",
       backgroundColor: COLORS.error,
-      fontColor: "255,255,255,255",
+      fontColor: COLORS.text,
       sfSymbol: SYMBOLS.error,
       status: "ERR",
     };
@@ -360,7 +455,7 @@ function render(state, now = Date.now()) {
       return {
         text: "收工啦",
         backgroundColor: COLORS.ok,
-        fontColor: "255,255,255,255",
+        fontColor: COLORS.text,
         sfSymbol: SYMBOLS.ok,
         status: "OK",
       };
@@ -372,7 +467,7 @@ function render(state, now = Date.now()) {
     return {
       text: withElapsed("等你点头", state, now),
       backgroundColor: COLORS.wait,
-      fontColor: "255,255,255,255",
+      fontColor: COLORS.text,
       sfSymbol: SYMBOLS.wait,
       status: "WAIT",
     };
@@ -384,7 +479,7 @@ function render(state, now = Date.now()) {
     return {
       text: state.fileChange ? text : withElapsed(text, state, now),
       backgroundColor: COLORS.tool,
-      fontColor: "255,255,255,255",
+      fontColor: COLORS.text,
       sfSymbol: SYMBOLS[phase] || state.symbol || "wrench.and.screwdriver",
       status: "TOOL",
     };
@@ -395,7 +490,7 @@ function render(state, now = Date.now()) {
       return {
         text: state.fileChange.text,
         backgroundColor: COLORS.ok,
-        fontColor: "255,255,255,255",
+        fontColor: COLORS.text,
         sfSymbol: SYMBOLS.file_done,
         status: "RUN",
       };
@@ -405,7 +500,7 @@ function render(state, now = Date.now()) {
       return {
         text: "刚做完",
         backgroundColor: COLORS.ok,
-        fontColor: "255,255,255,255",
+        fontColor: COLORS.text,
         sfSymbol: SYMBOLS.ok,
         status: "RUN",
       };
@@ -415,7 +510,7 @@ function render(state, now = Date.now()) {
       return {
         text: state.lastMessage || "开工了",
         backgroundColor: COLORS.thinking,
-        fontColor: "255,255,255,255",
+        fontColor: COLORS.text,
         sfSymbol: "play.circle",
         status: "RUN",
       };
@@ -425,7 +520,7 @@ function render(state, now = Date.now()) {
       return {
         text: "整理脑内便签",
         backgroundColor: COLORS.tool,
-        fontColor: "255,255,255,255",
+        fontColor: COLORS.text,
         sfSymbol: SYMBOLS.compact,
         status: "RUN",
       };
@@ -434,7 +529,7 @@ function render(state, now = Date.now()) {
     return {
       text: withElapsed(`我想想${dots(now)}`, state, now),
       backgroundColor: COLORS.thinking,
-      fontColor: "255,255,255,255",
+      fontColor: COLORS.text,
       sfSymbol: SYMBOLS.thinking,
       status: "RUN",
     };
