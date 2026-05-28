@@ -1,0 +1,117 @@
+# Codex Touch Bar Buddy
+
+一个给 Touch Bar 用的 Codex 工作搭子状态灯。
+
+## Files
+
+- `codex-touchbar-hook.mjs`: Codex lifecycle hook 写入器。
+- `codex-touchbar-read.mjs`: BetterTouchTool Script Widget 读取器。
+- `install-codex-hooks.mjs`: 把 hooks 安装到 `~/.codex/config.toml`。
+- `scripts/extract-codex-pet-assets.mjs`: 从 Codex App 包里抽取官方宠物 spritesheet。
+- `scripts/generate-touchbar-pet-frames.py`: 把官方宠物 spritesheet 裁成 Touch Bar 小帧。
+- `assets/pet/frames/*.png`: Touch Bar 使用的小宠物帧。
+- `.state/codex-touchbar-status.json`: 运行时状态文件，自动生成。
+
+状态文件只保存事件、工作目录、模型、工具名和时间戳；不会保存用户 prompt 或 assistant 正文。
+
+## BetterTouchTool Widget
+
+新建一个全局 Touch Bar Shell Script Widget，刷新间隔设为 `1` 或 `2` 秒，脚本填：
+
+```sh
+"/Applications/Codex.app/Contents/Resources/node" "/Users/ppphuang/Documents/agent-status/codex-touchbar-read.mjs"
+```
+
+脚本默认返回 BTT 可识别的 JSON，包括 `text`、`background_color`、`font_color`、`font_size`。
+
+如果你添加的是 **AppleScript / JavaScript 小组件**，并且右侧 `Source Type` 是 `Apple Script`，不要直接粘贴 shell 命令，改填：
+
+```applescript
+return do shell script ((quoted form of "/Applications/Codex.app/Contents/Resources/node") & " " & (quoted form of "/Users/ppphuang/Documents/agent-status/codex-touchbar-read.mjs"))
+```
+
+这个 AppleScript 会调用 Node 脚本，并把脚本输出的 BTT JSON 交回给小组件。
+
+如果只想先确认文字，可以运行：
+
+```sh
+"/Applications/Codex.app/Contents/Resources/node" "/Users/ppphuang/Documents/agent-status/codex-touchbar-read.mjs" --text
+```
+
+如果想查看当前状态对应的 SF Symbol 名称，可以运行：
+
+```sh
+"/Applications/Codex.app/Contents/Resources/node" "/Users/ppphuang/Documents/agent-status/codex-touchbar-read.mjs" --meta-json
+```
+
+BTT 的 Script Widget 对动态 SF Symbol 的支持会随版本变化；这个 MVP 默认可靠输出文字和背景色，`--meta-json` 里的 `sfSymbol` 可用于你在 BTT 里配置静态图标、正则外观，或后续做更深的 BTT 自动化。
+
+当 Codex 通过 `apply_patch` 修改文件时，状态灯会优先显示本次补丁的行数跳动：
+
+- 单文件：`read.mjs +3 -0`
+- 多文件：`3文件 +24 -6`
+
+这里的增删统计来自 hook 收到的 patch 文本，不读取文件正文。
+
+## Multi-Widget Touch Bar
+
+如果想利用更长的 Touch Bar，可以创建多个 BTT 小组件。每个小组件都调用同一个读取脚本，只是传不同的 `--slot`：
+
+- `--slot main`: 主状态，例如 `我想想...`、`跑个命令`；空闲时显示 `摸鱼中...` 和走动的小宠物
+- `--slot timer`: 当前回合耗时，例如 `00:18`
+- `--slot tool`: 当前工具，例如 `Bash`、`Patch`、`Browser`
+- `--slot diff`: 当前补丁行数，例如 `+12 -3`
+- `--slot file`: 当前文件，例如 `read.mjs`
+- `--slot pet`: 单独的小宠物槽位，只显示宠物图标
+- `--slot walk --index N --count M`: 空闲时横向走动用的宠物槽位
+
+`main` 槽位和旧的单槽位模式会显示 Codex 小宠物帧；空闲时显示 `摸鱼中...` 并循环走路帧。`pet` 槽位可以单独放一个宠物。其他槽位在没有实际内容时会返回透明空白，例如空闲时不会再显示 `00:00`、`idle`、`+0 -0` 或工作区名。
+
+AppleScript / JavaScript 小组件可以分别填：
+
+```applescript
+return do shell script ((quoted form of "/Applications/Codex.app/Contents/Resources/node") & " " & (quoted form of "/Users/ppphuang/Documents/agent-status/codex-touchbar-read.mjs") & " --slot main")
+```
+
+```applescript
+return do shell script ((quoted form of "/Applications/Codex.app/Contents/Resources/node") & " " & (quoted form of "/Users/ppphuang/Documents/agent-status/codex-touchbar-read.mjs") & " --slot timer")
+```
+
+```applescript
+return do shell script ((quoted form of "/Applications/Codex.app/Contents/Resources/node") & " " & (quoted form of "/Users/ppphuang/Documents/agent-status/codex-touchbar-read.mjs") & " --slot tool")
+```
+
+```applescript
+return do shell script ((quoted form of "/Applications/Codex.app/Contents/Resources/node") & " " & (quoted form of "/Users/ppphuang/Documents/agent-status/codex-touchbar-read.mjs") & " --slot diff")
+```
+
+```applescript
+return do shell script ((quoted form of "/Applications/Codex.app/Contents/Resources/node") & " " & (quoted form of "/Users/ppphuang/Documents/agent-status/codex-touchbar-read.mjs") & " --slot file")
+```
+
+如果想单独放一个宠物槽位：
+
+```applescript
+return do shell script ((quoted form of "/Applications/Codex.app/Contents/Resources/node") & " " & (quoted form of "/Users/ppphuang/Documents/agent-status/codex-touchbar-read.mjs") & " --slot pet")
+```
+
+如果想让小宠物在 Touch Bar 上横向走动，可以加多个很窄的 walk 槽位，`--count` 写总数，`--index` 从 0 开始递增。例如 6 个槽位分别填：
+
+```applescript
+return do shell script ((quoted form of "/Applications/Codex.app/Contents/Resources/node") & " " & (quoted form of "/Users/ppphuang/Documents/agent-status/codex-touchbar-read.mjs") & " --slot walk --index 0 --count 6")
+```
+
+把 `--index 0` 依次改成 `1`、`2`、`3`、`4`、`5`。空闲时这些槽位会轮流显示宠物；Codex 开始工作后它们会自动变成透明空白。
+
+注意横向走动的槽位都要用 `--slot walk`。`--slot main` 和 `--slot pet` 在空闲时会一直显示宠物，适合原地走路，不适合参与横向移动队列。
+
+## Touch Actions
+
+建议在 BTT 里给这个 widget 配两个动作：
+
+- Tap: 打开 Codex App，命令是 `/usr/bin/open -a Codex`。
+- Long Press: 打开状态文件，命令是 `/usr/bin/open "/Users/ppphuang/Documents/agent-status/.state/codex-touchbar-status.json"`。
+
+## Hook Trust
+
+安装或修改 hook 后，打开 Codex 并输入 `/hooks`，review/trust 这组 hook。Codex 会按 hook hash 记录信任状态，所以脚本更新后重新 trust 是正常的。
