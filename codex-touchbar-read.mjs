@@ -19,7 +19,7 @@ const FILE_DONE_TTL_MS = 8_000;
 const START_TTL_MS = 4_000;
 const COMPACT_TTL_MS = 5_000;
 const RUN_STALE_MS = 30 * 60_000;
-const WAIT_STALE_MS = 30 * 60_000;
+const WAIT_STALE_MS = numberEnv("CODEX_TOUCHBAR_WAIT_STALE_MS", 90_000);
 const ELAPSED_AFTER_MS = 10_000;
 
 const ARGS = parseArgs(process.argv.slice(2));
@@ -134,6 +134,11 @@ function parseArgs(args) {
 function intArg(name, fallback) {
   const value = Number.parseInt(ARGS.get(name), 10);
   return Number.isFinite(value) ? value : fallback;
+}
+
+function numberEnv(name, fallback) {
+  const value = Number.parseInt(process.env[name] || "", 10);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
 function formatElapsed(ms) {

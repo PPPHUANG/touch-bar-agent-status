@@ -16,33 +16,39 @@
 
 ## Status Preview
 
-思考时，它会显示：
+这是一组最新的真实 Touch Bar 截图。主槽位负责表达 Codex 当前状态，副槽位显示耗时、工具、文件增删行数和当前文件。
 
-![触控栏快照2026-05-28 15.09.30](assets/readme/status-thinking.png)
+思考时，会显示蓝色主状态、耗时和 `Think`：
 
-需要授权时，它会显示：
+![Thinking status](assets/readme/status-thinking.png)
 
-![触控栏快照2026-05-28 15.12.51](assets/readme/status-permission.png)
+需要授权时，会切到紫色审批态：
 
-跑命令时，它会显示：
+![Permission status](assets/readme/status-permission.png)
 
-![触控栏快照2026-05-28 15.24.10](assets/readme/status-command.png)
+跑命令时，会显示终端图标、命令工具和运行时间：
 
-改文件时，它会显示：
+![Command status](assets/readme/status-command.png)
 
-![触控栏快照2026-05-28 15.17.38](assets/readme/status-edit.png)
+改文件时，会显示当前文件、Patch、绿色新增行和红色删除行：
 
-空闲时，它会进入一种非常合理的工作状态：
+![Edit status](assets/readme/status-edit.png)
 
-![image-20260528150741064](assets/readme/status-idle.png)
+浏览/检查页面时，会显示 `Browser` 或 `inspect`：
 
-旁边还有一个 Codex 小宠物，在 Touch Bar 上慢慢走路。
+![Browser status](assets/readme/status-browser.png)
 
-还有一些其他状态显示：
+![Inspect done status](assets/readme/status-inspect-done.png)
 
-![触控栏快照2026-05-28 15.09.58](assets/readme/status-other-1.png)
+任务结束后，会短暂显示完成态：
 
-![触控栏快照2026-05-28 15.10.38](assets/readme/status-other-2.png)
+![Done status](assets/readme/status-done.png)
+
+![Command done status](assets/readme/status-command-done.png)
+
+空闲时，它会进入一种非常合理的工作状态：摸鱼中。旁边还有一个 Codex 小宠物，在 Touch Bar 上慢慢走路。
+
+![Idle status](assets/readme/status-idle.png)
 
 ## Quick Start
 
@@ -114,6 +120,8 @@ return do shell script ((quoted form of "/Applications/Codex.app/Contents/Resour
 ```
 
 BTT 的 Script Widget 对动态 SF Symbol 的支持会随版本变化；这个 MVP 默认可靠输出文字和背景色，`--meta-json` 里的 `sfSymbol` 可用于你在 BTT 里配置静态图标、正则外观，或后续做更深的 BTT 自动化。
+
+授权态默认最多保留 `90` 秒。如果用户拒绝、取消或 Codex 没有继续发出后续 hook，Touch Bar 会自动回到空闲态，避免一直卡在 `等你点头`。如需调整，可以给 BTT 脚本设置环境变量 `CODEX_TOUCHBAR_WAIT_STALE_MS`。
 
 当 Codex 通过 `apply_patch` 修改文件时，状态灯会优先显示本次补丁的行数跳动：
 
